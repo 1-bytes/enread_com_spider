@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"enread_com/pkg/filters"
 	"regexp"
 	"strings"
 	"unicode"
@@ -14,7 +15,7 @@ func GetContentFromBody(body []byte) []byte {
 	if len(content) == 0 {
 		return nil
 	}
-	return content[0][1]
+	return filters.HtmlFilter(content[0][1])
 }
 
 // Content 解析正文
@@ -35,7 +36,7 @@ func Content(bytes []byte) []byte {
 				continue
 			}
 			if hasChinese(temp[k]) {
-				str["Chinese"] = temp[k]
+				str["TranslationCN"] = temp[k]
 				continue
 			}
 			str["English"] = temp[k]

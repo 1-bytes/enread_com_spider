@@ -3,7 +3,6 @@ package main
 import (
 	"enread_com/parser"
 	"enread_com/pkg/fetcher"
-	"enread_com/pkg/filters"
 	"fmt"
 )
 
@@ -20,13 +19,12 @@ func main() {
 	//})
 	//
 	//c.Visit("http://go-colly.org/")
-	//bytes, err := fetcher.Fetch("http://www.enread.com/science/116816.html")
-	bytes, err := fetcher.Fetch("http://www.enread.com/science/116639.html")
+	bytes, err := fetcher.Fetch("http://www.enread.com/science/116816.html")
+	//bytes, err := fetcher.Fetch("http://www.enread.com/science/116639.html")
 	if err != nil {
 		panic(err)
 	}
 	bytes = parser.GetContentFromBody(bytes)
-	bytes = filters.HtmlFilter(bytes)
 	bytes = parser.Content(bytes)
 	fmt.Println(string(bytes))
 }
