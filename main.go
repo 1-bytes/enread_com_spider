@@ -25,7 +25,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	bytes = parser.ContentFromBody(bytes)
+	bytes = parser.GetContentFromBody(bytes)
 	bytes = filters.HtmlFilter(bytes)
+	bytes = parser.Content(bytes)
 	fmt.Println(string(bytes))
 }
