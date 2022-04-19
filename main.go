@@ -1,10 +1,10 @@
 package main
 
 import (
+	"enread_com/parser"
+	"enread_com/pkg/fetcher"
 	"enread_com/pkg/filters"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 )
 
 func main() {
@@ -20,12 +20,12 @@ func main() {
 	//})
 	//
 	//c.Visit("http://go-colly.org/")
-	resp, err := http.Get("http://www.enread.com/science/116816.html")
+	//bytes, err := fetcher.Fetch("http://www.enread.com/science/116816.html")
+	bytes, err := fetcher.Fetch("http://www.enread.com/science/116639.html")
 	if err != nil {
 		panic(err)
 	}
-	defer resp.Body.Close()
-	bytes, _ := ioutil.ReadAll(resp.Body)
+	bytes = parser.ContentFromBody(bytes)
 	bytes = filters.HtmlFilter(bytes)
 	fmt.Println(string(bytes))
 }

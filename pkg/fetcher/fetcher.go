@@ -5,22 +5,23 @@ import (
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
 
-func Fetch(url string) (string, error) {
+// Fetch 用于获取网页内容
+func Fetch(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
+	bodyReader := bufio.NewReader(resp.Body)
+	e := determineEncoding(bodyReader)
+	utf8Reader := transform.NewReader(bodyReader, e.NewDecoder())
+	return ioutil.ReadAll(utf8Reader)
 }
 
 // determineEncoding 自动判断网页编码.
