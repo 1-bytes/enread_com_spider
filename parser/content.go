@@ -7,6 +7,8 @@ import (
 	"unicode"
 )
 
+type paragraph map[string]string
+
 var bodyRe = regexp.MustCompile(`<div id="dede_content">([\S\s]+)<div class="dede_pages">`)
 
 // GetContentFromBody 从网页中提取正文
@@ -19,31 +21,31 @@ func GetContentFromBody(body []byte) []byte {
 }
 
 // Content 解析正文
-func Content(bytes []byte) []byte {
+func Content(bytes []byte) []paragraph {
 	contents := strings.Split(string(bytes), "\t&nbsp; ")
 
-	var result []map[string]string
+	var paragraphs []paragraph
 	for key, value := range contents {
 		if value == "" {
 			continue
 		}
 		contents[key] = strings.TrimSpace(value)
-		temp := strings.Split(value, "\r\n")
-		str := map[string]string{}
-		for k, v := range temp {
-			temp[k] = strings.TrimSpace(v)
-			if temp[k] == "" {
+		split := strings.Split(value, "\r\n")
+		temp := paragraph{}
+		for k, v := range split {
+			split[k] = strings.TrimSpace(v)
+			if split[k] == "" {
 				continue
 			}
-			if hasChinese(temp[k]) {
-				str["TranslationCN"] = temp[k]
+			if hasChinese(split[k]) {
+				temp["TranslationCN"] = split[k]
 				continue
 			}
-			str["English"] = temp[k]
+			temp["English"] = split[k]
 		}
-		result = append(result, str)
+		paragraphs = append(paragraphs, temp)
 	}
-	return nil
+	return paragraphs
 }
 
 // hasChinese 判断字符串中是否包含中文

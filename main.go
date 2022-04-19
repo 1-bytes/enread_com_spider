@@ -25,6 +25,11 @@ func main() {
 		panic(err)
 	}
 	bytes = parser.GetContentFromBody(bytes)
-	bytes = parser.Content(bytes)
-	fmt.Println(string(bytes))
+	paragraphs := parser.Content(bytes)
+
+	for _, paragraph := range paragraphs {
+		fmt.Printf("English: %s\n", paragraph["English"])
+		fmt.Printf("TranslationCN: %s\n", paragraph["TranslationCN"])
+		fmt.Println()
+	}
 }
