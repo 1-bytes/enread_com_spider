@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -40,7 +41,7 @@ func FetchAndContent(u string) ([]paragraph, error) {
 
 	// 取 ID
 	urlPath = strings.Trim(urlPathSplit[1], "/")
-	articleID := strings.Split(urlPath, ".")[0]
+	articleIDSplit := strings.Split(urlPath, ".")[0]
 
 	var paragraphs []paragraph
 	for key, value := range contents {
@@ -64,8 +65,9 @@ func FetchAndContent(u string) ([]paragraph, error) {
 		if temp["EN"] == "" {
 			continue
 		}
+		articleID, _ := strconv.Atoi(articleIDSplit)
 		data := JsonData{
-			ArticleID: articleID,
+			ArticleID: strconv.Itoa(articleID + 1000000),
 			Category:  category,
 			SourceURL: u,
 			Paragraph: temp,
