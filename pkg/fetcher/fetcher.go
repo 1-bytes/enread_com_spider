@@ -13,11 +13,15 @@ import (
 
 // Fetch 用于获取网页内容
 func Fetch(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	request.Header.Add("Cookie", "security_session_mid_verify=692bca3343d933a33e46033436ac1c65;")
+	request.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36")
+	request.Header.Add("Referer", "https://www.baidu.com/?with=%20")
+	resp, err := client.Do(request)
 	bodyReader := bufio.NewReader(resp.Body)
 	e := determineEncoding(bodyReader)
 	utf8Reader := transform.NewReader(bodyReader, e.NewDecoder())
