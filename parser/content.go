@@ -15,12 +15,22 @@ import (
 type paragraph map[string]string
 
 var bodyRe = regexp.MustCompile(`<div id="dede_content">([\S\s]+)<div class="dede_pages">`)
+var titleRe = regexp.MustCompile(`<tbody><tr><td height="72"><div[^>]*?><font[^>]*?>(.+)</font></div></td> </tr>`)
+
+// GetTitleFromBody 从网页中提取标题
+func GetTitleFromBody(body string) string {
+	title := titleRe.FindAllStringSubmatch(body, -1)
+	if len(title) == 0 {
+		return ""
+	}
+	return filters.HtmlFilter(title[0][1])
+}
 
 // GetContentFromBody 从网页中提取正文
-func GetContentFromBody(body []byte) []byte {
-	content := bodyRe.FindAllSubmatch(body, -1)
+func GetContentFromBody(body string) string {
+	content := bodyRe.FindAllStringSubmatch(body, -1)
 	if len(content) == 0 {
-		return nil
+		return ""
 	}
 	return filters.HtmlFilter(content[0][1])
 }
@@ -32,10 +42,13 @@ func FetchAndContent(u string) ([]paragraph, error) {
 	if err != nil {
 		return nil, err
 	}
+	body := string(bytes)
+	title := GetTitleFromBody(body)
+	fmt.Println(title)
 	// 从完整的网页中获取文章内容
-	bytes = GetContentFromBody(bytes)
+	content := GetContentFromBody(body)
 	// 文章拆段落(此时段落中可能中英文混合)
-	contents := strings.Split(string(bytes), "\t&nbsp; ")
+	contents := strings.Split(content, "\t&nbsp; ")
 	urlParse, err := url.Parse(u)
 	// 取分类
 	urlPath := strings.Trim(urlParse.Path, "/")
@@ -71,7 +84,8 @@ func FetchAndContent(u string) ([]paragraph, error) {
 		}
 		articleID, _ := strconv.Atoi(articleIDSplit)
 		data := JsonData{
-			ArticleID: strconv.Itoa(articleID + 1000000),
+			ID:        strconv.Itoa(articleID + 1000000),
+			Title:     title,
 			Category:  category,
 			SourceURL: u,
 			Paragraph: temp,
