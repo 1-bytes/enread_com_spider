@@ -48,7 +48,7 @@ func SpiderCallbacks(c *colly.Collector) {
 
 		// 链接中存在某些关键字的直接跳过
 		skipURLKeywordsMap := []string{
-			"#", "skill",
+			"#", "com/tags", "com/skill", "com/exam", "com/job",
 		}
 		for _, keyword := range skipURLKeywordsMap {
 			if strings.Index(url, keyword) != -1 {
