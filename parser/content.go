@@ -27,18 +27,20 @@ func GetContentFromBody(body []byte) []byte {
 
 // FetchAndContent 解析正文
 func FetchAndContent(u string) ([]paragraph, error) {
+	// 发起请求 获取网页内容
 	bytes, err := fetcher.Fetch(u)
 	if err != nil {
 		return nil, err
 	}
+	// 从完整的网页中获取文章内容
 	bytes = GetContentFromBody(bytes)
+	// 文章拆段落(此时段落中可能中英文混合)
 	contents := strings.Split(string(bytes), "\t&nbsp; ")
 	urlParse, err := url.Parse(u)
 	// 取分类
 	urlPath := strings.Trim(urlParse.Path, "/")
 	urlPathSplit := strings.Split(urlPath, "/")
 	category := urlPathSplit[0]
-
 	// 取 ID
 	urlPath = strings.Trim(urlPathSplit[1], "/")
 	articleIDSplit := strings.Split(urlPath, ".")[0]
@@ -56,12 +58,14 @@ func FetchAndContent(u string) ([]paragraph, error) {
 			if split[k] == "" {
 				continue
 			}
+			// 判断当前段落是中文还是英文
 			if hasChinese(split[k]) {
 				temp["CN"] = split[k]
 				continue
 			}
 			temp["EN"] = split[k]
 		}
+		// 如果这个段落的英文是空的，那也没必要存了
 		if temp["EN"] == "" {
 			continue
 		}
