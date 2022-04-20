@@ -1,7 +1,11 @@
 package parser
 
 import (
+	"enread_com/cmd"
+	"enread_com/pkg/fetcher"
 	"enread_com/pkg/filters"
+	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode"
@@ -20,9 +24,23 @@ func GetContentFromBody(body []byte) []byte {
 	return filters.HtmlFilter(content[0][1])
 }
 
-// Content 解析正文
-func Content(bytes []byte) []paragraph {
+// FetchAndContent 解析正文
+func FetchAndContent(u string) ([]paragraph, error) {
+	bytes, err := fetcher.Fetch(u)
+	if err != nil {
+		return nil, err
+	}
+	bytes = GetContentFromBody(bytes)
 	contents := strings.Split(string(bytes), "\t&nbsp; ")
+	urlParse, err := url.Parse(u)
+	// 取分类
+	urlPath := strings.Trim(urlParse.Path, "/")
+	urlPathSplit := strings.Split(urlPath, "/")
+	category := urlPathSplit[0]
+
+	// 取 ID
+	urlPath = strings.Trim(urlPathSplit[1], "/")
+	articleID := strings.Split(urlPath, ".")[0]
 
 	var paragraphs []paragraph
 	for key, value := range contents {
@@ -38,14 +56,25 @@ func Content(bytes []byte) []paragraph {
 				continue
 			}
 			if hasChinese(split[k]) {
-				temp["TranslationCN"] = split[k]
+				temp["CN"] = split[k]
 				continue
 			}
-			temp["English"] = split[k]
+			temp["EN"] = split[k]
 		}
-		paragraphs = append(paragraphs, temp)
+		if temp["EN"] == "" {
+			continue
+		}
+		data := JsonData{
+			ArticleID: articleID,
+			Category:  category,
+			SourceURL: u,
+			Paragraph: temp,
+		}
+		if err = cmd.SaveData("enread_com", "", data); err != nil {
+			fmt.Printf("SaveData error: %v\n", err)
+		}
 	}
-	return paragraphs
+	return paragraphs, nil
 }
 
 // hasChinese 判断字符串中是否包含中文

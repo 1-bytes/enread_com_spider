@@ -1,8 +1,8 @@
 package main
 
 import (
+	"enread_com/bootstrap"
 	"enread_com/parser"
-	"enread_com/pkg/fetcher"
 	"fmt"
 )
 
@@ -19,17 +19,17 @@ func main() {
 	//})
 	//
 	//c.Visit("http://go-colly.org/")
-	bytes, err := fetcher.Fetch("http://www.enread.com/science/116816.html")
-	//bytes, err := fetcher.Fetch("http://www.enread.com/science/116639.html")
+
+	bootstrap.Setup()
+	//paragraphs := parser.FetchAndContent("http://www.enread.com/science/116639.html")
+	paragraphs, err := parser.FetchAndContent("http://www.enread.com/science/116816.html")
 	if err != nil {
-		panic(err)
+		fmt.Printf("Error: %s\n", err)
 	}
-	bytes = parser.GetContentFromBody(bytes)
-	paragraphs := parser.Content(bytes)
 
 	for _, paragraph := range paragraphs {
-		fmt.Printf("English: %s\n", paragraph["English"])
-		fmt.Printf("TranslationCN: %s\n", paragraph["TranslationCN"])
+		fmt.Printf("EN: %s\n", paragraph["EN"])
+		fmt.Printf("CN: %s\n", paragraph["CN"])
 		fmt.Println()
 	}
 }
