@@ -29,31 +29,22 @@ func Content(body []byte) ([]paragraph, error) {
 	}
 	body = filters.HtmlFilter(content[0][1])
 	// 文章拆段落(此时段落中可能中英文混合)
-	contentSplit := strings.Split(string(body), "&nbsp; \r\n")
+	contentSplit := strings.Split(string(body), "\r\n")
 	var paragraphs []paragraph
 	for key, value := range contentSplit {
 		if value == "" {
 			continue
 		}
-		contentSplit[key] = strings.TrimSpace(value)
-		split := strings.Split(value, "\r\n")
 		temp := paragraph{}
-		for k, v := range split {
-			split[k] = strings.TrimSpace(v)
-			if split[k] == "" {
-				continue
-			}
-			// 判断当前段落是中文还是英文
-			if hasChinese(split[k]) {
-				temp["CN"] = split[k]
-				continue
-			}
-			temp["EN"] = split[k]
-		}
-		// 如果这个段落的英文是空的，那也没必要存了
-		if temp["EN"] == "" {
+		contentSplit[key] = strings.TrimSpace(value)
+		if contentSplit[key] == "" {
 			continue
 		}
+		// 判断当前段落是中文还是英文
+		if hasChinese(contentSplit[key]) {
+			continue
+		}
+		temp["EN"] = contentSplit[key]
 		paragraphs = append(paragraphs, temp)
 	}
 	return paragraphs, nil
