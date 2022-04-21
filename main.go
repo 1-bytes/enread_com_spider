@@ -1,7 +1,6 @@
 package main
 
 import (
-	"enread_com/bootstrap"
 	"enread_com/cmd"
 	"enread_com/parser"
 	"enread_com/pkg/fetcher"
@@ -10,6 +9,7 @@ import (
 )
 
 func main() {
+	//bootstrap.Setup()
 	//c := cmd.NewCollector(
 	//	//colly.Debugger(&debug.LogDebugger{}),
 	//	colly.Async(false),
@@ -22,8 +22,9 @@ func main() {
 	//	))
 	//cmd.SpiderCallbacks(c)
 	//c.Visit("http://www.enread.com/")
+	//c.Wait()
 
-	bootstrap.Setup()
+	//url := "http://www.enread.com/novel/43490.html"
 	url := "http://www.enread.com/science/116639.html"
 	bytes, err := fetcher.Fetch(url)
 	if err != nil {
@@ -35,7 +36,6 @@ func main() {
 	category := parser.Category(url)
 	releaseDate := parser.ReleaseDate(bytes)
 	paragraphs, err := parser.Content(bytes)
-	//paragraphs, err := parser.Content("http://www.enread.com/science/116816.html")
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 	}

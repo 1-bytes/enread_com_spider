@@ -7,6 +7,7 @@ func Setup() {
 	autoLoader(
 		config.Initialize, // 配置文件
 		SetupElastic,
+		SetupMySQL,
 	)
 }
 

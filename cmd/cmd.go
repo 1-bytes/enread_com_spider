@@ -3,12 +3,15 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"enread_com/bootstrap"
+	"enread_com/parser"
 	elasticsearch "enread_com/pkg/elastic"
 	"fmt"
 	"github.com/gocolly/colly/v2"
 	"github.com/olivere/elastic/v7"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -58,14 +61,69 @@ func SpiderCallbacks(c *colly.Collector) {
 		e.Request.Visit(url)
 	})
 
+	//
+	c.OnResponse(func(r *colly.Response) {
+		url := r.Request.URL.String()
+		if strings.Index(url, "index.html") != -1 || strings.Index(url, "html") == -1 {
+			return
+		}
+
+		body := r.Body
+		id := parser.ID(url)
+		title := parser.Title(body)
+		author := parser.Author()
+		category := parser.Category(url)
+		releaseDate := parser.ReleaseDate(body)
+		paragraphs, err := parser.Content(body)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+		}
+		for _, paragraph := range paragraphs {
+			//fmt.Printf("ID: %d\n", id)
+			//fmt.Printf("Title: %s\n", title)
+			//fmt.Printf("Author: %s\n", author)
+			//fmt.Printf("Category: %s\n", category)
+			//fmt.Printf("ReleaseDate: %s\n", releaseDate)
+			//fmt.Printf("EN: %s\n", paragraph["EN"])
+			//fmt.Printf("CN: %s\n", paragraph["CN"])
+			//fmt.Println()
+
+			data := parser.JsonData{
+				ID:          strconv.Itoa(id),
+				Title:       title,
+				Author:      author,
+				ReleaseDate: releaseDate,
+				Category:    category,
+				SourceURL:   url,
+				Paragraph:   paragraph,
+			}
+			if err = SaveDataToElastic("enread_com", "", data); err != nil {
+				fmt.Printf("SaveData error: %v\n", err)
+			}
+		}
+		err = SaveDataToMySQL("dict_article_test", &parser.DictArticleModel{
+			ID:                  id,
+			Title:               title,
+			Author:              author,
+			ReleaseDate:         releaseDate,
+			MostRecentlyUpdated: "",
+		})
+		if err != nil {
+			fmt.Printf("SaveData error: %v\n", err)
+		}
+	})
+
+	// 错误处理
 	c.OnError(func(resp *colly.Response, err error) {
-		fmt.Println("Request URL:", resp.Request.URL, "failed with response:", resp, "\nError:", err)
+		err = resp.Request.Retry()
+		if err != nil {
+			fmt.Println("Request URL:", resp.Request.URL, "failed with response:", resp, "\nError:", err)
+		}
 	})
 }
 
-// SaveData 存储数据
+// SaveDataToElastic 存储数据至 ES
 func SaveDataToElastic(index string, id string, data interface{}) error {
-	return nil
 	j, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -79,4 +137,14 @@ func SaveDataToElastic(index string, id string, data interface{}) error {
 	do, err := e.Index(index).BodyJson(string(j)).Do(context.Background())
 	fmt.Printf("%+v: %+v\n", do.Result, do.Id)
 	return err
+}
+
+// SaveDataToMySQL 存储数据至 mysql
+func SaveDataToMySQL(tables string, data *parser.DictArticleModel) error {
+	db := bootstrap.DB
+	tx := db.Table(tables).Create(data)
+	if err := tx.Error; err != nil {
+		return err
+	}
+	return nil
 }
