@@ -33,10 +33,10 @@ var (
 )
 
 // HtmlFilter 用于将信息中的 html 标签过滤掉
-func HtmlFilter(content string) string {
+func HtmlFilter(content []byte) []byte {
 	for re, value := range reMap {
 		reg := regexp.MustCompile(re)
-		content = string(reg.ReplaceAll([]byte(content), []byte(value)))
+		content = reg.ReplaceAll(content, []byte(value))
 	}
 	return content
 }

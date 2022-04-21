@@ -64,7 +64,8 @@ func SpiderCallbacks(c *colly.Collector) {
 }
 
 // SaveData 存储数据
-func SaveData(index string, id string, data interface{}) error {
+func SaveDataToElastic(index string, id string, data interface{}) error {
+	return nil
 	j, err := json.Marshal(data)
 	if err != nil {
 		return err

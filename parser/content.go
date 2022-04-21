@@ -1,69 +1,41 @@
 package parser
 
 import (
-	"enread_com/cmd"
-	"enread_com/pkg/fetcher"
 	"enread_com/pkg/filters"
 	"fmt"
-	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode"
 )
 
+type content struct {
+	url    string
+	title  string
+	author string
+	date   string
+	text   string
+}
+
 type paragraph map[string]string
 
-var bodyRe = regexp.MustCompile(`<div id="dede_content">([\S\s]+)<div class="dede_pages">`)
-var titleRe = regexp.MustCompile(`<tbody><tr><td height="72"><div[^>]*?><font[^>]*?>(.+)</font></div></td> </tr>`)
-
-// GetTitleFromBody 从网页中提取标题
-func GetTitleFromBody(body string) string {
-	title := titleRe.FindAllStringSubmatch(body, -1)
-	if len(title) == 0 {
-		return ""
-	}
-	return filters.HtmlFilter(title[0][1])
-}
-
-// GetContentFromBody 从网页中提取正文
-func GetContentFromBody(body string) string {
-	content := bodyRe.FindAllStringSubmatch(body, -1)
-	if len(content) == 0 {
-		return ""
-	}
-	return filters.HtmlFilter(content[0][1])
-}
-
-// FetchAndContent 解析正文
-func FetchAndContent(u string) ([]paragraph, error) {
-	// 发起请求 获取网页内容
-	bytes, err := fetcher.Fetch(u)
-	if err != nil {
-		return nil, err
-	}
-	body := string(bytes)
-	title := GetTitleFromBody(body)
-	fmt.Println(title)
+// Content 解析正文
+func Content(body []byte) ([]paragraph, error) {
+	re := `<div id="dede_content">([\S\s]+)<div class="dede_pages">`
+	var contentRe = regexp.MustCompile(re)
 	// 从完整的网页中获取文章内容
-	content := GetContentFromBody(body)
+	content := contentRe.FindAllSubmatch(body, -1)
+	if len(content) == 0 {
+		return []paragraph{}, fmt.Errorf("failed to parse content")
+	}
+	body = filters.HtmlFilter(content[0][1])
 	// 文章拆段落(此时段落中可能中英文混合)
-	contents := strings.Split(content, "\t&nbsp; ")
-	urlParse, err := url.Parse(u)
-	// 取分类
-	urlPath := strings.Trim(urlParse.Path, "/")
-	urlPathSplit := strings.Split(urlPath, "/")
-	category := urlPathSplit[0]
-	// 取 ID
-	urlPath = strings.Trim(urlPathSplit[1], "/")
-	articleIDSplit := strings.Split(urlPath, ".")[0]
-
+	contentSplit := strings.Split(string(body), "\t&nbsp; ")
 	var paragraphs []paragraph
-	for key, value := range contents {
+	for key, value := range contentSplit {
 		if value == "" {
 			continue
 		}
-		contents[key] = strings.TrimSpace(value)
+		contentSplit[key] = strings.TrimSpace(value)
 		split := strings.Split(value, "\r\n")
 		temp := paragraph{}
 		for k, v := range split {
@@ -82,17 +54,7 @@ func FetchAndContent(u string) ([]paragraph, error) {
 		if temp["EN"] == "" {
 			continue
 		}
-		articleID, _ := strconv.Atoi(articleIDSplit)
-		data := JsonData{
-			ID:        strconv.Itoa(articleID + 1000000),
-			Title:     title,
-			Category:  category,
-			SourceURL: u,
-			Paragraph: temp,
-		}
-		if err = cmd.SaveData("enread_com", "", data); err != nil {
-			fmt.Printf("SaveData error: %v\n", err)
-		}
+		paragraphs = append(paragraphs, temp)
 	}
 	return paragraphs, nil
 }
