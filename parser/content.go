@@ -29,7 +29,7 @@ func Content(body []byte) ([]paragraph, error) {
 	}
 	body = filters.HtmlFilter(content[0][1])
 	// 文章拆段落(此时段落中可能中英文混合)
-	contentSplit := strings.Split(string(body), "\t&nbsp; ")
+	contentSplit := strings.Split(string(body), "&nbsp; \r\n")
 	var paragraphs []paragraph
 	for key, value := range contentSplit {
 		if value == "" {
