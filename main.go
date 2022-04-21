@@ -1,29 +1,38 @@
 package main
 
 import (
+	"enread_com/bootstrap"
 	"enread_com/cmd"
 	"enread_com/parser"
 	"enread_com/pkg/fetcher"
 	"fmt"
+	"github.com/gocolly/colly/v2"
+	"regexp"
 	"strconv"
 )
 
 func main() {
-	//bootstrap.Setup()
-	//c := cmd.NewCollector(
-	//	//colly.Debugger(&debug.LogDebugger{}),
-	//	colly.Async(false),
-	//	colly.AllowedDomains("www.enread.com", "enread.com"),
-	//	colly.DetectCharset(),
-	//	colly.URLFilters(
-	//		regexp.MustCompile(`/[A-Za-z/]+/\d+\.html$`),
-	//		regexp.MustCompile(`/[A-Za-z/]+/index\.html$`),
-	//		regexp.MustCompile(`http://www\.enread\.com/$`),
-	//	))
-	//cmd.SpiderCallbacks(c)
-	//c.Visit("http://www.enread.com/")
-	//c.Wait()
+	bootstrap.Setup()
+	c := cmd.NewCollector(
+		//colly.Debugger(&debug.LogDebugger{}),
+		colly.Async(true),
+		colly.AllowedDomains("www.enread.com", "enread.com"),
+		colly.DetectCharset(),
+		colly.URLFilters(
+			regexp.MustCompile(`/[A-Za-z/]+/\d+\.html$`),
+			regexp.MustCompile(`/[A-Za-z/]+/index\.html$`),
+			regexp.MustCompile(`http://www\.enread\.com/$`),
+		))
+	cmd.SpiderCallbacks(c)
+	c.Visit("http://www.enread.com/")
+	c.Wait()
 
+	//testCase()
+}
+
+// testCase 测试用例
+func testCase() {
+	bootstrap.Setup()
 	//url := "http://www.enread.com/novel/43490.html"
 	url := "http://www.enread.com/science/116639.html"
 	bytes, err := fetcher.Fetch(url)
