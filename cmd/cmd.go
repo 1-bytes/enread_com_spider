@@ -35,6 +35,7 @@ func NewCollector(options ...colly.CollectorOption) *colly.Collector {
 
 // SpiderCallbacks colly 的回调函数
 func SpiderCallbacks(c *colly.Collector) {
+	// 请求发起之前要处理的一些事件
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
 		r.Headers.Set("Referer", "http://www.baidu.com/?from=home")
@@ -42,7 +43,7 @@ func SpiderCallbacks(c *colly.Collector) {
 		r.Headers.Set("Cookie", "security_session_mid_verify=692bca3343d933a33e46033436ac1c65;")
 	})
 
-	//Find and visit all links
+	// 抓取新的页面
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		url := e.Attr("href")
 		if strings.Index(url, "http://") != 0 {
@@ -61,7 +62,7 @@ func SpiderCallbacks(c *colly.Collector) {
 		e.Request.Visit(url)
 	})
 
-	//
+	// 处理请求结果
 	c.OnResponse(func(r *colly.Response) {
 		url := r.Request.URL.String()
 		if strings.Index(url, "index.html") != -1 || strings.Index(url, "html") == -1 {
