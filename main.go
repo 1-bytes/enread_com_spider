@@ -9,6 +9,7 @@ import (
 	"github.com/gocolly/colly/v2"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 func main() {
@@ -23,17 +24,23 @@ func main() {
 			regexp.MustCompile(`/[A-Za-z/]+/index\.html$`),
 			regexp.MustCompile(`http://www\.enread\.com/$`),
 		))
+	c.Limit(&colly.LimitRule{
+		DomainGlob:  "*",
+		Parallelism: 30,
+		RandomDelay: 200 * time.Millisecond,
+	})
 	cmd.SpiderCallbacks(c)
-	c.Visit("http://www.enread.com/")
+	if err := c.Visit("http://www.enread.com/"); err != nil {
+		panic(err)
+	}
 	c.Wait()
-
 	//testCase()
 }
 
 // testCase 测试用例
 func testCase() {
 	bootstrap.Setup()
-	//url := "http://www.enread.com/novel/43490.html"
+	//url := "http://www.enread.com/news/life/116818.html"
 	url := "http://www.enread.com/science/116639.html"
 	bytes, err := fetcher.Fetch(url)
 	if err != nil {
@@ -61,7 +68,6 @@ func testCase() {
 
 		data := parser.JsonData{
 			ID:        strconv.Itoa(id),
-			Category:  category,
 			SourceURL: url,
 			Paragraph: paragraph,
 		}

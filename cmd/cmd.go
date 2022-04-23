@@ -8,7 +8,9 @@ import (
 	elasticsearch "enread_com/pkg/elastic"
 	"fmt"
 	"github.com/gocolly/colly/v2"
+	"github.com/gocolly/colly/v2/proxy"
 	"github.com/olivere/elastic/v7"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -19,8 +21,19 @@ import (
 // NewCollector 传入配置信息，创建并返回一个 colly 的 collector 实例
 func NewCollector(options ...colly.CollectorOption) *colly.Collector {
 	c := colly.NewCollector(options...)
+
+	rp, err := proxy.RoundRobinProxySwitcher("socks5://127.0.0.1:1080")
+	if err != nil {
+		log.Println("attempt to use Socks5 proxy failed.")
+		panic(err)
+	}
+	c.SetRedirectHandler(func(req *http.Request, via []*http.Request) error {
+		log.Println(via[len(via)-1].URL.String(), " redirected to ", req.URL.String())
+		return nil
+	})
+
 	c.WithTransport(&http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy: rp,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -38,9 +51,11 @@ func SpiderCallbacks(c *colly.Collector) {
 	// 请求发起之前要处理的一些事件
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
-		r.Headers.Set("Referer", "http://www.baidu.com/?from=home")
+		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+		r.Headers.Set("Host", "www.enread.com")
+		r.Headers.Set("Referer", "http://www.enread.com/?security_verify_data=313730372c393630")
 		r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36")
-		r.Headers.Set("Cookie", "security_session_mid_verify=692bca3343d933a33e46033436ac1c65;")
+		r.Headers.Set("Cookie", "yunsuo_session_verify=6187176ad0e7be5040ccc3f2cacfff2d; srcurl=687474703a2f2f7777772e656e726561642e636f6d2f; security_session_mid_verify=ea4e4321c96759befa268f2016f61716; __51cke__=; __tins__1636281=%7B%22sid%22%3A%201650610149272%2C%20%22vd%22%3A%204%2C%20%22expires%22%3A%201650612711020%7D; __51laig__=4")
 	})
 
 	// 抓取新的页面
@@ -59,7 +74,7 @@ func SpiderCallbacks(c *colly.Collector) {
 				return
 			}
 		}
-		e.Request.Visit(url)
+		_ = e.Request.Visit(url)
 	})
 
 	// 处理请求结果
@@ -90,24 +105,22 @@ func SpiderCallbacks(c *colly.Collector) {
 			//fmt.Println()
 
 			data := parser.JsonData{
-				ID:          strconv.Itoa(id),
-				Title:       title,
-				Author:      author,
-				ReleaseDate: releaseDate,
-				Category:    category,
-				SourceURL:   url,
-				Paragraph:   paragraph,
+				ID:        strconv.Itoa(id),
+				SourceURL: url,
+				Paragraph: paragraph,
 			}
-			if err = SaveDataToElastic("enread_com", "", data); err != nil {
+			if err = SaveDataToElastic("dict_article", "", data); err != nil {
 				fmt.Printf("SaveData error: %v\n", err)
 			}
 		}
-		err = SaveDataToMySQL("dict_article_test", &parser.DictArticleModel{
+		err = SaveDataToMySQL("dict_article", &parser.DictArticleModel{
 			ID:                  id,
+			Type:                parser.TypeMap[category],
 			Title:               title,
 			Author:              author,
 			ReleaseDate:         releaseDate,
 			MostRecentlyUpdated: "",
+			SourceUrl:           url,
 		})
 		if err != nil {
 			fmt.Printf("SaveData error: %v\n", err)

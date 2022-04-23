@@ -32,7 +32,7 @@ func Category(u string) string {
 	// 取分类
 	urlPath := strings.Trim(urlParse.Path, "/")
 	urlPathSplit := strings.Split(urlPath, "/")
-	return urlPathSplit[0]
+	return strings.TrimSpace(urlPathSplit[0])
 }
 
 // ReleaseDate 发布日期
@@ -42,5 +42,5 @@ func ReleaseDate(body []byte) string {
 	if len(match) == 0 {
 		return ""
 	}
-	return match[0][1]
+	return strings.TrimSpace(match[0][1])
 }
