@@ -8,12 +8,9 @@ import (
 	elasticsearch "enread_com/pkg/elastic"
 	"fmt"
 	"github.com/gocolly/colly/v2"
-	"github.com/gocolly/colly/v2/proxy"
 	"github.com/olivere/elastic/v7"
-	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -22,18 +19,18 @@ import (
 func NewCollector(options ...colly.CollectorOption) *colly.Collector {
 	c := colly.NewCollector(options...)
 
-	rp, err := proxy.RoundRobinProxySwitcher("socks5://127.0.0.1:1080")
-	if err != nil {
-		log.Println("attempt to use Socks5 proxy failed.")
-		panic(err)
-	}
-	c.SetRedirectHandler(func(req *http.Request, via []*http.Request) error {
-		log.Println(via[len(via)-1].URL.String(), " redirected to ", req.URL.String())
-		return nil
-	})
+	//rp, err := proxy.RoundRobinProxySwitcher("socks5://127.0.0.1:1080")
+	//if err != nil {
+	//	log.Println("attempt to use Socks5 proxy failed.")
+	//	panic(err)
+	//}
+	//c.SetRedirectHandler(func(req *http.Request, via []*http.Request) error {
+	//	log.Println(via[len(via)-1].URL.String(), " redirected to ", req.URL.String())
+	//	return nil
+	//})
 
 	c.WithTransport(&http.Transport{
-		Proxy: rp,
+		//Proxy: rp,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -55,7 +52,7 @@ func SpiderCallbacks(c *colly.Collector) {
 		r.Headers.Set("Host", "www.enread.com")
 		r.Headers.Set("Referer", "http://www.enread.com/?security_verify_data=313730372c393630")
 		r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36")
-		r.Headers.Set("Cookie", "yunsuo_session_verify=6187176ad0e7be5040ccc3f2cacfff2d; srcurl=687474703a2f2f7777772e656e726561642e636f6d2f; security_session_mid_verify=ea4e4321c96759befa268f2016f61716; __51cke__=; __tins__1636281=%7B%22sid%22%3A%201650610149272%2C%20%22vd%22%3A%204%2C%20%22expires%22%3A%201650612711020%7D; __51laig__=4")
+		r.Headers.Set("Cookie", "yunsuo_session_verify=484a5df3ba80cb550841f661181f8560; PHPSESSID=s0q493vvev2rvt4avktpa04ov7")
 	})
 
 	// 抓取新的页面
@@ -80,12 +77,13 @@ func SpiderCallbacks(c *colly.Collector) {
 	// 处理请求结果
 	c.OnResponse(func(r *colly.Response) {
 		url := r.Request.URL.String()
+		domain := r.Request.URL.Host
 		if strings.Index(url, "index.html") != -1 || strings.Index(url, "html") == -1 {
 			return
 		}
 
 		body := r.Body
-		id := parser.ID(url)
+		//id := parser.ID(url)
 		title := parser.Title(body)
 		author := parser.Author()
 		category := parser.Category(url)
@@ -93,6 +91,11 @@ func SpiderCallbacks(c *colly.Collector) {
 		paragraphs, err := parser.Content(body)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
+		}
+		if len(paragraphs) == 0 {
+			fmt.Printf("Error: request failed, title or content is nil")
+			//	_ = r.Request.Retry()
+			return
 		}
 		for _, paragraph := range paragraphs {
 			//fmt.Printf("ID: %d\n", id)
@@ -105,21 +108,23 @@ func SpiderCallbacks(c *colly.Collector) {
 			//fmt.Println()
 
 			data := parser.JsonData{
-				ID:        strconv.Itoa(id),
-				SourceURL: url,
-				Paragraph: paragraph,
+				//ID:           strconv.Itoa(id),
+				SourceDomain: domain,
+				SourceURL:    url,
+				Paragraph:    paragraph,
 			}
 			if err = SaveDataToElastic("dict_article", "", data); err != nil {
 				fmt.Printf("SaveData error: %v\n", err)
 			}
 		}
 		err = SaveDataToMySQL("dict_article", &parser.DictArticleModel{
-			ID:                  id,
+			//ID:                  id,
 			Type:                parser.TypeMap[category],
 			Title:               title,
 			Author:              author,
 			ReleaseDate:         releaseDate,
 			MostRecentlyUpdated: "",
+			SourceDomain:        domain,
 			SourceUrl:           url,
 		})
 		if err != nil {
@@ -149,7 +154,9 @@ func SaveDataToElastic(index string, id string, data interface{}) error {
 		e.Id(id)
 	}
 	do, err := e.Index(index).BodyJson(string(j)).Do(context.Background())
-	fmt.Printf("%+v: %+v\n", do.Result, do.Id)
+	if do != nil {
+		fmt.Printf("%+v: %+v\n", do.Result, do.Id)
+	}
 	return err
 }
 

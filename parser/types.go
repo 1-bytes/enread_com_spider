@@ -7,8 +7,9 @@ type JsonData struct {
 	//Author      string    `json:"author"`
 	//ReleaseDate string    `json:"release_date"`
 	//Category    string    `json:"category"`
-	SourceURL string    `json:"source_url"`
-	Paragraph paragraph `json:"paragraph"`
+	SourceDomain string    `json:"source_domain"`
+	SourceURL    string    `json:"source_url"`
+	Paragraph    paragraph `json:"paragraph"`
 }
 
 type DictArticleModel struct {
@@ -18,6 +19,7 @@ type DictArticleModel struct {
 	Author              string `gorm:"type:varchar(128); not null" json:"author"`
 	ReleaseDate         string `gorm:"type:varchar(128); not null" json:"release_date"`
 	MostRecentlyUpdated string `gorm:"type:varchar(128); not null" json:"most_recently_updated"`
+	SourceDomain        string `gorm:"type:varchar(255); not null" json:"source_domain"`
 	SourceUrl           string `gorm:"type:varchar(255); not null" json:"source_url"`
 }
 

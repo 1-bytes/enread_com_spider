@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/gocolly/colly/v2"
 	"regexp"
-	"strconv"
 	"time"
 )
 
@@ -26,7 +25,7 @@ func main() {
 		))
 	c.Limit(&colly.LimitRule{
 		DomainGlob:  "*",
-		Parallelism: 30,
+		Parallelism: 5,
 		RandomDelay: 200 * time.Millisecond,
 	})
 	cmd.SpiderCallbacks(c)
@@ -46,7 +45,7 @@ func testCase() {
 	if err != nil {
 		panic(err)
 	}
-	id := parser.ID(url)
+	//id := parser.ID(url)
 	title := parser.Title(bytes)
 	author := parser.Author()
 	category := parser.Category(url)
@@ -57,7 +56,7 @@ func testCase() {
 	}
 
 	for _, paragraph := range paragraphs {
-		fmt.Printf("ID: %d\n", id)
+		//fmt.Printf("ID: %d\n", id)
 		fmt.Printf("Title: %s\n", title)
 		fmt.Printf("Author: %s\n", author)
 		fmt.Printf("Category: %s\n", category)
@@ -67,7 +66,7 @@ func testCase() {
 		fmt.Println()
 
 		data := parser.JsonData{
-			ID:        strconv.Itoa(id),
+			//ID:        strconv.Itoa(id),
 			SourceURL: url,
 			Paragraph: paragraph,
 		}

@@ -13,7 +13,7 @@ func ID(u string) int {
 	match := idRe.FindAllStringSubmatch(u, -1)
 	if len(match) > 0 {
 		id, _ := strconv.Atoi(match[0][1])
-		return id + 1000000
+		return id
 	}
 	return -1
 }
